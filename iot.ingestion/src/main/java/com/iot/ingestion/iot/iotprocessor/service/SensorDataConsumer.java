@@ -28,7 +28,7 @@ public class SensorDataConsumer {
     @KafkaListener(topics = "sensor_data_raw", groupId = "iot_processor_group_v3")
     @Transactional
     public void consume(String message) {
-        long count = messageCounter.incrementAndGet();
+        long count = messageCounter.incrementAndGet(); // Incrementa o contador
         try {
             JsonNode root = objectMapper.readTree(message);
 
@@ -42,9 +42,10 @@ public class SensorDataConsumer {
             data.setProcessedByThread(Thread.currentThread().toString());
 
             sensorDataRepository.save(data);
+
             if (count % 10000 == 0) {
-            log.info("Processadas {} mensagens. Última salva: sensorId={}, Thread: {}", 
-                     count, data.getSensorId(), data.getProcessedByThread());
+                log.info("Processadas {} mensagens. Última salva: sensorId={}, Thread: {}",
+                        count, data.getSensorId(), data.getProcessedByThread());
             }
 
         } catch (Exception e) {

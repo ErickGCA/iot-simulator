@@ -6,24 +6,18 @@ import random
 import sys
 import os
 
-# --- Configurações ---
 KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC = 'sensor_data_raw'
-# Ajuste o número de mensagens para testar a carga (1 milhão é um bom começo)
 NUM_MESSAGES_TO_PRODUCE = 1_000_000 
-BATCH_SIZE = 5_000 # Quantas mensagens antes de 'flush' parcial para o Kafka
+BATCH_SIZE = 5_000 
 
-# Inicializa o produtor Kafka
 producer_conf = {'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS}
 producer = Producer(producer_conf)
 
-# Inicializa Faker para dados mockados
 fake = Faker('pt_BR')
 
-# --- Funções de Geração de Dados ---
 def generate_sensor_data(sensor_id_base):
     """Gera dados de um sensor simulado."""
-    # Simula IDs de sensores diferentes (ex: 1000 sensores distintos)
     sensor_id = f"sensor_{sensor_id_base}_{random.randint(100, 999)}"
     location = {
         "latitude": float(fake.latitude()),
@@ -63,18 +57,15 @@ def delivery_report(err, msg):
     # else:
         # print(f"Mensagem entregue para {msg.topic()} [{msg.partition()}]")
 
-# --- Função Principal de Produção ---
 def produce_messages():
     """Produz um número especificado de mensagens para o Kafka."""
     print(f"Iniciando a produção de {NUM_MESSAGES_TO_PRODUCE} mensagens para o tópico '{KAFKA_TOPIC}'...")
     start_time = time.time()
 
     for i in range(NUM_MESSAGES_TO_PRODUCE):
-        # Usar o módulo (resto da divisão) para simular diferentes sensores ciclicamente
-        sensor_id_base = i % 2000 # Simula 2000 IDs base de sensores diferentes
+        sensor_id_base = i % 2000 
         data = generate_sensor_data(sensor_id_base)
 
-        # O .produce() é não bloqueante. O produtor armazena em buffer e envia em lotes.
         producer.produce(
             KAFKA_TOPIC, 
             key=str(data["sensorId"]).encode('utf-8'), 
@@ -82,14 +73,11 @@ def produce_messages():
             callback=delivery_report
         )
 
-        # Chama poll para permitir que os callbacks de entrega sejam invocados
-        # e para liberar espaço no buffer do produtor.
         if i % BATCH_SIZE == 0:
-            producer.poll(0) # Não bloquear, apenas processar eventos pendentes
+            producer.poll(0) 
             sys.stdout.write(f'\rProduzindo... {i} mensagens enviadas.')
             sys.stdout.flush()
 
-    # Espera até que todas as mensagens em buffer sejam entregues
     print("\nFinalizando produção e aguardando confirmação de entrega de todas as mensagens...")
     producer.flush() 
     end_time = time.time()
@@ -97,7 +85,6 @@ def produce_messages():
     print(f"Verifique o console do serviço Java para ver o consumo.")
 
 if __name__ == "__main__":
-    # Instala as dependências se não estiverem instaladas
     try:
         import confluent_kafka
         import faker
